@@ -1,0 +1,52 @@
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Fname | Minit | Lname | Ssn Bdate Address Sex [Salary | Super_ssn | Dno
+John B | smith | 128456789 | 1965-01-09 [781 Fondren, Houston, Tx| M_|30000 [sa344s555 |_5
+Franklin | _T | Wong | 383445555 | 1955-12-08 [638 Voss, Houston, TX_| M_|40000 |saaee5so5 | 5
+Alicia | J | Zelaya_| 999887777 | 1968-01-19 |3321 Castle, Spring, TX_| F_|25000 |gs7e5a321 | 4
+Jennifer | S| Wallace| 987654321 | 1941-06-20 |201 Bem, Bellaire, TX | F 43000 |saacesss5 | 4
+Ramesh | K__| Narayan | 666884444 | 1962-09-15 [975 Fire Oak, Humble, TX| M_|38000 [333445555 | 5
+Joyce | A_| English | 453453458 | 1972-07-81 |5631 Rice, Houston, T | F [25000 [399445555 5
+Ahmad | V_ | Jabbar | 987987987 | 1969-03-29 | 980 Dallas, Houston, TX | M_ [25000 [ae7654321 | 4
+James | E | Borg | 888665955 | 1937-11-10 |450 Stone, Houston, TX | M |55000 [NULL 1
+
+ 
+
+ 
+
+ 
+
+ 
+

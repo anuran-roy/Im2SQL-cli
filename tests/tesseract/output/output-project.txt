@@ -1,0 +1,30 @@
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Phame Pnumber | Plocation | Dnum
+Product 1 Bellaire 5
+ProductY Sugarland | 5
+ProductZ Houston 5
+Computerization | 10 _| Stafford 4
+Reorganization 20 | Houston 1
+Newbenefits 30 ‘| Stafford 4
+
+ 
+
+ 
+
+ 
+
