@@ -5,9 +5,10 @@
 import cv2
 import pytesseract
 import numpy as np
+from typing import Any, List
+import sys
 
-
-def recognize(img_path, tesseract_path):  # Taken from GFG
+def recognize(img_path: str, tesseract_path: str) -> str:  # Taken from GFG
 
     # Mention the installed location of Tesseract-OCR in your system
     pytesseract.pytesseract.tesseract_cmd = tesseract_path
@@ -57,7 +58,7 @@ def recognize(img_path, tesseract_path):  # Taken from GFG
         # rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # Cropping the text block for giving input to OCR
-        cropped = im2[y : y + h, x : x + w]
+        cropped = im2[y: y + h, x: x + w]
 
         # Open the file in append mode
         #         file = open(output_path, "a")
@@ -75,29 +76,24 @@ def recognize(img_path, tesseract_path):  # Taken from GFG
     return text
 
 
-text = recognize("tests/tesseract/input/employee.png", "/usr/bin/tesseract")
+def tokenize(text: str) -> List:
+    tx2: str = str(text.strip().replace("|", "; ").replace("[", "; "))
+    lines: List = [[typecast(j.strip(" "), 0) for j in i.split(";")] for i in tx2.split("\n")]
 
-# print(text.strip().replace("|", ", ").replace("[", ", "))
+    return lines
 
+def typecast(text: str, decimals: int = 1) -> Any:
+    try:
+        if decimals == 0:
+            return int(text)
+        else:
+            return np.round(float(text), decimals)
+    except Exception:
+        if text.lower() == "null":
+            return text
+        else:
+            return f"'{text}'"
 
-def typecast(text, decimals=1):
-    if text.isnumeric():
-        try:
-            if decimals == 0:
-                return int(text)
-            else:
-                return np.round(float(text), decimals)
-        finally:
-            pass
-    elif text.lower() == "null":
-        return text
-    else:
-        return f"'{text}'"
-
-
-tx2 = str(text.strip().replace("|", "; ").replace("[", "; "))
-
-lines = [[typecast(j.strip(" "), 0) for j in i.split(";")] for i in tx2.split("\n")]
 
 # for i in lines:
 #     print(i, end=",\n")
@@ -112,21 +108,111 @@ class TableNameException(Exception):
         super().__init__(self.msg)
 
 
-table_name = input("Enter table name:")
+def to_insertion(table_name: str, lines: List) -> List:
+    print("\nConverting to INSERT commands...\n")
+    commands = list()
+    for i in lines:
+        cmd = f"INSERT INTO {table_name} VALUES("
+        for j in range(len(i)):
+            cmd += f"{i[j]}"
+            if j < len(i) - 1:
+                cmd += ", "
+        cmd += ");"
+        commands.append(cmd)
 
-if len(table_name.strip().split(" ")) != 1 or table_name == "":
-    raise TableNameException
+    return commands
 
-commands = list()
-for i in lines:
-    cmd = f"INSERT INTO {table_name} VALUES("
-    for j in range(len(i)):
-        cmd += f"{i[j]}"
-        if j < len(i) - 1:
-            cmd += ", "
-    cmd += ");"
-    commands.append(cmd)
-    # print(cmd)
 
-for i in commands:
-    print(i)
+def typeEnforce(cmd: List) -> List:
+    # checks: List = list()
+    cmd2 = list(cmd)
+    # correct_col_len = list()
+
+    print("\nChecking row contents...\n")
+    for i in range(len(cmd2) - 1):
+        if len(cmd2[i]) != len(cmd2[i+1]):
+            # checks.append(f" -> Entry {i+1} is different in length compared to entry {i+2}")
+            print(f" -> Entry {i+1} (Length: {len(cmd2[i])}) is different in length compared to entry {i+2} (Length: {len(cmd2[i+1])})")
+        # else:
+        #     correct_col_len.append(cmd2[i])
+
+    lengths: List = [len(x) for x in cmd]
+    unique_lengths: List = list(set(lengths))
+    frequencies: List = dict()
+
+    for i in unique_lengths:
+        frequencies[i] = 0
+
+    for i in lengths:
+        frequencies[i] += 1
+
+    most_common_column_no = (sorted(list(frequencies.items()), key=lambda x: x[0]))[-1]
+    print("Number of entries:", len(cmd))
+    print("Most common number of columns: ", most_common_column_no[0])
+
+    correct_length_columns = [(cmd[i], i+1) for i in range(len(cmd)) if len(cmd[i]) == most_common_column_no[0]]
+
+    # if len(checks) >= 1:
+    #     return checks
+
+    # for i in checks:
+    #     print(i)
+
+    # print(f"Columns with {most_common_column_no[0]} columns:\n")
+    # for i in correct_length_columns:
+    #     print(i[0])
+
+    print("\nType checking column contents...\n")
+
+    for i in range(len(correct_length_columns)-1):
+        for j in range(most_common_column_no[0]):
+            if isinstance(correct_length_columns[i][0][j], type(correct_length_columns[i+1][0][j])):
+                print(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
+                # checks.append(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
+                # return False
+
+    # return checks
+def write(table_name, lines, path):
+    try:
+        f = open(path, 'w')
+
+        for i in to_insertion(table_name, lines):
+            f.write(i)
+            f.write("\n")
+        
+        f.close()
+    except Exception as e:
+        print(f"Error occured while writing to specified location. Details: {e}")
+
+def driver():
+    text: str = recognize("tests/tesseract/input/works on.png", "/usr/bin/tesseract")
+
+    lines: List = tokenize(text)
+    # print("\nIdentified Text:\n")
+    # print(text.strip().replace("|", ", ").replace("[", ", "))
+
+    table_name = input("Enter table name:")
+
+    if len(table_name.strip().split(" ")) != 1 or table_name == "":
+        raise TableNameException
+    
+    for i in to_insertion(table_name, lines[1:]):
+        print(i)
+
+    # chk: List = typeEnforce(lines[1:])
+
+    # for i in chk:
+    #     print(i)
+    if "--typecheck" in sys.argv:
+        print("\nChecks:\n")
+        typeEnforce(lines[1:])
+
+    if "-o" in sys.argv and "-o" != sys.argv[-1]:
+        index = sys.argv.index("-o")
+
+        path = sys.argv[index+1]
+
+        write(table_name, lines, path)
+
+if __name__ == "__main__":
+    driver()

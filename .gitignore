@@ -1,3 +1,7 @@
 *.ipynb
 .ipynb_checkpoints
 im2sql
+deployment
+*.sql
+.gitignore
+*_dummy.png
