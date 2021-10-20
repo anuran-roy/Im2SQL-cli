@@ -248,7 +248,7 @@ def test():
     # pass
     if "--test" in sys.argv:
         pass
-    
+
     INPUT_DIR: List = list(os.walk("tests/tesseract/input"))[0][-1]
 
     # for i in

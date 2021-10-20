@@ -1,6 +1,6 @@
 # Im2SQL
 
-A simple Python program that converts your image containing data tables to SQL commands (ALMOST) perfectly.
+A simple Python program that converts your image containing data tables to SQL commands fairly well.
 
 ## How to use:
 
