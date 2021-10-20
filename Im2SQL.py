@@ -94,6 +94,8 @@ def tokenize(text: str) -> List:
         ] for i in tx2.split("\n")
     ]
 
+    while([] in lines):
+        lines.remove([])
     return lines
 
 
@@ -115,7 +117,7 @@ def typecast(text: str, decimals: int = 1) -> Any:
 
 
 def to_insertion(table_name: str, lines: List) -> List:
-    print("\nConverting to INSERT commands...\n")
+    print("\nConverting to INSERT commands...")
     commands: List = list()
 
     # print("\nTo parse:\n")
@@ -124,28 +126,35 @@ def to_insertion(table_name: str, lines: List) -> List:
     print("\n\n")
     for i in lines:
         cmd: str = f"INSERT INTO {table_name} VALUES("
-        if i != []:
-            for j in range(len(i)):
-                cmd += f"{i[j]}"
-                if j < len(i) - 1:
-                    cmd += ", "
-            cmd += ");"
-            commands.append(cmd)
+        for j in range(len(i)):
+            cmd += f"{i[j]}"
+            if j < len(i) - 1:
+                cmd += ", "
+        cmd += ");"
+        commands.append(cmd)
 
     return commands
 
 
 def typeEnforce(cmd: List) -> List:
-    # checks: List = list()
+    count: int = int(input("Enter number of columns you want:"))
+    checks: List = list()
     cmd2: List = list(cmd)
     # correct_col_len = list()
 
     print("\nChecking row contents...\n")
     for i in range(len(cmd2) - 1):
         if len(cmd2[i]) != len(cmd2[i + 1]):
-            # checks.append(f" -> Entry {i+1} is different in length compared to entry {i+2}")
+            checks.append(f" -> Entry {i+1} is different in length compared to entry {i+2}")
             print(
-                f" -> Entry {i+1} (Length: {len(cmd2[i])}) is different in length compared to entry {i+2} (Length: {len(cmd2[i+1])})"
+                f" -> Entry {i+1} (Length: {len(cmd2[i])}) has different number of columns compared to entry {i+2} (Length: {len(cmd2[i+1])})"
+            )
+
+    for i in range(len(cmd2)):    
+        if len(cmd2[i]) != count:
+            checks.append(f" -> Entry {i+1} (Length: {len(cmd2[i])}) has different number of columns compared to intended length ({count})")
+            print(
+                f" -> Entry {i+1} (Length: {len(cmd2[i])}) has different number of columns compared to intended length ({count})"
             )
         # else:
         #     correct_col_len.append(cmd2[i])
@@ -168,7 +177,7 @@ def typeEnforce(cmd: List) -> List:
     correct_length_columns: List = [
         (cmd[i], i + 1)
         for i in range(len(cmd))
-        if len(cmd[i]) == most_common_column_no[0]
+        if len(cmd[i]) == count
     ]
 
     # if len(checks) >= 1:
@@ -181,21 +190,22 @@ def typeEnforce(cmd: List) -> List:
     # for i in correct_length_columns:
     #     print(i[0])
 
-    print("\nType checking column contents...\n")
+    if len(correct_length_columns) > 0:
+        print("\nType checking column contents...\n")
 
     for i in range(len(correct_length_columns) - 1):
         for j in range(most_common_column_no[0]):
-            if type(correct_length_columns[i][0][j]) == \
+            if type(correct_length_columns[i][0][j]) != \
                type(correct_length_columns[i + 1][0][j]):
                 print(f" -> Column {j+1} in entry", end=" ")
                 print(f"{correct_length_columns[i][1]} is different", end=" ")
                 print(
                     f"type compared to that in entry {correct_length_columns[i+1][1]}"
                 )
-                # checks.append(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
+                checks.append(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
                 # return False
 
-    # return checks
+    return checks
 
 
 def write(table_name: str, lines: List, path: str) -> None:
@@ -225,16 +235,19 @@ def driver(image_path: str, tesseract_path: str) -> None:
     
     commands: List = to_insertion(table_name, lines[1:])
 
-    for i in commands:
-        print(i)
+    for i in range(len(commands)):
+        print(f"{i+1}.\t{commands[i]}")
 
     # chk: List = typeEnforce(lines[1:])
 
     # for i in chk:
     #     print(i)
     if "--typecheck" in sys.argv:
-        print("\nChecks:\n")
-        typeEnforce(lines[1:])
+        print("\nChecks:")
+        chk: List = typeEnforce(lines[1:])
+
+        if len(chk) == 0:
+            print("No errors found! You can copy-paste in peace :D\n")
 
     if "-o" in sys.argv and "-o" != sys.argv[-1]:
         index: int = sys.argv.index("-o")
@@ -253,8 +266,15 @@ def test():
 
     # for i in
 
+
 if __name__ == "__main__":
-    INPUT_PATH: str = "/home/anuran/Desktop/sample sql table 8.png"  # "tests/tesseract/input/works on.png"
+    INPUT_PATH = input("Enter image path: ")
+    if INPUT_PATH == "":
+        INPUT_PATH: str = "/home/anuran/Desktop/sample sql table 8.png"  # "tests/tesseract/input/works on.png"
+
     TESSERACT_PATH: str = "/usr/bin/tesseract"
 
-    driver(INPUT_PATH, TESSERACT_PATH)
+    try:
+        driver(INPUT_PATH, TESSERACT_PATH)
+    except Exception as e:
+        print(f"Exception encountered. Details: {e}")
