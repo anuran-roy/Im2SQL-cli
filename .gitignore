@@ -4,4 +4,5 @@ im2sql
 deployment
 *.sql
 .gitignore
-*_dummy.png
+*_dummy.*
+sample.txt

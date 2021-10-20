@@ -5,8 +5,18 @@
 import cv2
 import pytesseract
 import numpy as np
-from typing import Any, List
+from typing import Any, List, Tuple, Dict
 import sys
+
+
+class TableNameException(Exception):
+    def __init__(self):
+        self.msg = """\nYour table name isn't in one word.
+                    Consider using underscores (_) instead of spaces
+                    and hyphens(-)\n
+                    """
+        super().__init__(self.msg)
+
 
 def recognize(img_path: str, tesseract_path: str) -> str:  # Taken from GFG
 
@@ -58,13 +68,13 @@ def recognize(img_path: str, tesseract_path: str) -> str:  # Taken from GFG
         # rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # Cropping the text block for giving input to OCR
-        cropped = im2[y: y + h, x: x + w]
+        cropped = im2[y:(y + h), x:(x + w)]
 
         # Open the file in append mode
         #         file = open(output_path, "a")
 
         # Apply OCR on the cropped image
-        text = pytesseract.image_to_string(cropped)
+        text = pytesseract.image_to_string(im2)  # cropped)
 
         # Appending the text into file
     #         file.write(text)
@@ -78,9 +88,14 @@ def recognize(img_path: str, tesseract_path: str) -> str:  # Taken from GFG
 
 def tokenize(text: str) -> List:
     tx2: str = str(text.strip().replace("|", "; ").replace("[", "; "))
-    lines: List = [[typecast(j.strip(" "), 0) for j in i.split(";")] for i in tx2.split("\n")]
+    lines: List = [
+        [
+            typecast(j.strip(" "), 0) for j in i.split(";") if typecast(j.strip(" "), 0) != "''"
+        ] for i in tx2.split("\n")
+    ]
 
     return lines
+
 
 def typecast(text: str, decimals: int = 1) -> Any:
     try:
@@ -99,46 +114,45 @@ def typecast(text: str, decimals: int = 1) -> Any:
 #     print(i, end=",\n")
 
 
-class TableNameException(Exception):
-    def __init__(self):
-        self.msg = """\nYour table name isn't in one word.
-                    Consider using underscores (_) instead of spaces
-                    and hyphens(-)\n
-                    """
-        super().__init__(self.msg)
-
-
 def to_insertion(table_name: str, lines: List) -> List:
     print("\nConverting to INSERT commands...\n")
-    commands = list()
+    commands: List = list()
+
+    # print("\nTo parse:\n")
+    # for i in lines:
+    #     print(i)
+    print("\n\n")
     for i in lines:
-        cmd = f"INSERT INTO {table_name} VALUES("
-        for j in range(len(i)):
-            cmd += f"{i[j]}"
-            if j < len(i) - 1:
-                cmd += ", "
-        cmd += ");"
-        commands.append(cmd)
+        cmd: str = f"INSERT INTO {table_name} VALUES("
+        if i != []:
+            for j in range(len(i)):
+                cmd += f"{i[j]}"
+                if j < len(i) - 1:
+                    cmd += ", "
+            cmd += ");"
+            commands.append(cmd)
 
     return commands
 
 
 def typeEnforce(cmd: List) -> List:
     # checks: List = list()
-    cmd2 = list(cmd)
+    cmd2: List = list(cmd)
     # correct_col_len = list()
 
     print("\nChecking row contents...\n")
     for i in range(len(cmd2) - 1):
-        if len(cmd2[i]) != len(cmd2[i+1]):
+        if len(cmd2[i]) != len(cmd2[i + 1]):
             # checks.append(f" -> Entry {i+1} is different in length compared to entry {i+2}")
-            print(f" -> Entry {i+1} (Length: {len(cmd2[i])}) is different in length compared to entry {i+2} (Length: {len(cmd2[i+1])})")
+            print(
+                f" -> Entry {i+1} (Length: {len(cmd2[i])}) is different in length compared to entry {i+2} (Length: {len(cmd2[i+1])})"
+            )
         # else:
         #     correct_col_len.append(cmd2[i])
 
     lengths: List = [len(x) for x in cmd]
     unique_lengths: List = list(set(lengths))
-    frequencies: List = dict()
+    frequencies: Dict = dict()
 
     for i in unique_lengths:
         frequencies[i] = 0
@@ -146,11 +160,16 @@ def typeEnforce(cmd: List) -> List:
     for i in lengths:
         frequencies[i] += 1
 
-    most_common_column_no = (sorted(list(frequencies.items()), key=lambda x: x[0]))[-1]
+    most_common_column_no: Tuple = (sorted(list(frequencies.items()),
+                                    key=lambda x: x[0]))[-1]
     print("Number of entries:", len(cmd))
     print("Most common number of columns: ", most_common_column_no[0])
 
-    correct_length_columns = [(cmd[i], i+1) for i in range(len(cmd)) if len(cmd[i]) == most_common_column_no[0]]
+    correct_length_columns: List = [
+        (cmd[i], i + 1)
+        for i in range(len(cmd))
+        if len(cmd[i]) == most_common_column_no[0]
+    ]
 
     # if len(checks) >= 1:
     #     return checks
@@ -164,39 +183,49 @@ def typeEnforce(cmd: List) -> List:
 
     print("\nType checking column contents...\n")
 
-    for i in range(len(correct_length_columns)-1):
+    for i in range(len(correct_length_columns) - 1):
         for j in range(most_common_column_no[0]):
-            if isinstance(correct_length_columns[i][0][j], type(correct_length_columns[i+1][0][j])):
-                print(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
+            if type(correct_length_columns[i][0][j]) == \
+               type(correct_length_columns[i + 1][0][j]):
+                print(f" -> Column {j+1} in entry", end=" ")
+                print(f"{correct_length_columns[i][1]} is different", end=" ")
+                print(
+                    f"type compared to that in entry {correct_length_columns[i+1][1]}"
+                )
                 # checks.append(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
                 # return False
 
     # return checks
-def write(table_name, lines, path):
-    try:
-        f = open(path, 'w')
 
-        for i in to_insertion(table_name, lines):
+
+def write(table_name: str, lines: List, path: str) -> None:
+    try:
+        f = open(path, "w")
+
+        for i in lines:
             f.write(i)
             f.write("\n")
-        
+
         f.close()
     except Exception as e:
-        print(f"Error occured while writing to specified location. Details: {e}")
+        print(f"Error occured while writing to file. Details: {e}")
 
-def driver():
-    text: str = recognize("tests/tesseract/input/works on.png", "/usr/bin/tesseract")
+
+def driver(image_path: str, tesseract_path: str) -> None:
+    text: str = recognize(image_path, tesseract_path)
 
     lines: List = tokenize(text)
     # print("\nIdentified Text:\n")
     # print(text.strip().replace("|", ", ").replace("[", ", "))
 
-    table_name = input("Enter table name:")
+    table_name: str = input("Enter table name:")
 
     if len(table_name.strip().split(" ")) != 1 or table_name == "":
         raise TableNameException
     
-    for i in to_insertion(table_name, lines[1:]):
+    commands: List = to_insertion(table_name, lines[1:])
+
+    for i in commands:
         print(i)
 
     # chk: List = typeEnforce(lines[1:])
@@ -208,11 +237,24 @@ def driver():
         typeEnforce(lines[1:])
 
     if "-o" in sys.argv and "-o" != sys.argv[-1]:
-        index = sys.argv.index("-o")
+        index: int = sys.argv.index("-o")
 
-        path = sys.argv[index+1]
+        path: str = sys.argv[index + 1]
 
-        write(table_name, lines, path)
+        write(table_name, commands, path)
+
+
+def test():
+    # pass
+    if "--test" in sys.argv:
+        pass
+    
+    INPUT_DIR: List = list(os.walk("tests/tesseract/input"))[0][-1]
+
+    # for i in
 
 if __name__ == "__main__":
-    driver()
+    INPUT_PATH: str = "/home/anuran/Desktop/sample sql table 8.png"  # "tests/tesseract/input/works on.png"
+    TESSERACT_PATH: str = "/usr/bin/tesseract"
+
+    driver(INPUT_PATH, TESSERACT_PATH)
