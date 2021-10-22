@@ -6,3 +6,4 @@ deployment
 .gitignore
 *_dummy.*
 sample.txt
+.vscode

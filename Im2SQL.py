@@ -74,7 +74,7 @@ def recognize(img_path: str, tesseract_path: str) -> str:  # Taken from GFG
         #         file = open(output_path, "a")
 
         # Apply OCR on the cropped image
-        text = pytesseract.image_to_string(im2)  # cropped)
+        text = pytesseract.image_to_string(cropped)  # cropped)
 
         # Appending the text into file
     #         file.write(text)
@@ -205,6 +205,7 @@ def typeEnforce(cmd: List) -> List:
                 checks.append(f" -> Column {j+1} in entry {correct_length_columns[i][1]} is different type compared to that in entry {correct_length_columns[i+1][1]}")
                 # return False
 
+    print(f"\nChecks completed, {len(checks)} errors found.\n")
     return checks
 
 
